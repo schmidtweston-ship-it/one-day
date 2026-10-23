@@ -1,0 +1,188 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1f3a3d"><link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg"><link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>One Day</title>
+<style>
+:root{--bg:#1f3a3d;--card:#2c5054;--card2:#3a6266;--txt:#ffe7c2;--soft:#f3cfa0;--acc:#ffb454;--go:#ff8a5b;--calm:#7fd6c2;--crisis:#ff6f61;--ink:#2a1d14}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--txt);font:600 24px/1.45 system-ui,-apple-system,Segoe UI,sans-serif;padding-bottom:120px}
+main{padding:16px;max-width:720px;margin:auto}h1{font-size:44px;margin:14px 0 6px;line-height:1.15}h2{font-size:32px;margin:10px 0}
+p{margin:10px 0}.muted{color:var(--soft);font-weight:500}
+button,a.btn{display:block;width:100%;border:0;border-radius:22px;padding:22px;margin:12px 0;font:800 28px system-ui,sans-serif;color:var(--ink);background:var(--acc);text-align:center;text-decoration:none;cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline:5px solid var(--calm);outline-offset:3px}
+.big{font-size:40px;padding:44px 18px;background:var(--go);min-height:26vh}
+.calm{background:var(--calm)}.ghost{background:var(--card);color:var(--txt)}.crisis{background:var(--crisis)}
+.card{background:var(--card);border-radius:22px;padding:18px;margin:12px 0}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>*{flex:1 1 0;min-width:120px}.row button,.row a.btn{margin:6px 0;padding:16px;font-size:24px}
+.count{font-size:96px;font-weight:900;color:var(--acc);line-height:1;margin:8px 0}
+input,textarea{width:100%;font:600 24px system-ui,sans-serif;padding:14px;border-radius:14px;border:3px solid var(--acc);background:var(--bg);color:var(--txt);margin:6px 0 12px}
+textarea{min-height:110px}label{display:block;margin-top:8px}
+.scale{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}.scale button{margin:0;padding:16px 0;font-size:26px;background:var(--card2);color:var(--txt)}
+.scale button.on{background:var(--acc);color:var(--ink)}
+.bar{height:26px;background:var(--bg);border-radius:13px;overflow:hidden;margin:10px 0}.bar i{display:block;height:100%;background:var(--calm);width:0;transition:width 1s linear}
+.wave{font-size:120px;text-align:center;line-height:1}
+.mile{display:flex;justify-content:space-between;padding:10px 0;border-bottom:2px solid var(--card2)}.mile.done{color:var(--acc)}
+.foot{position:fixed;left:0;right:0;bottom:0;background:var(--ink);display:flex;gap:8px;padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
+.foot a.crisis{background:var(--crisis)}.foot a.ghost{background:var(--card);color:var(--txt)}
+.foot a{flex:1;margin:0;padding:14px 6px;font-size:22px;border-radius:16px}
+.hidden{display:none}.tag{display:inline-block;background:var(--card2);border-radius:12px;padding:4px 12px;margin:4px 6px;font-size:20px}
+.say{float:right;width:auto;padding:8px 16px;font-size:20px;margin:0 0 0 10px;background:var(--card2);color:var(--txt)}
+</style></head><body>
+<main id="app"></main>
+<nav class="foot">
+<a class="btn crisis" href="tel:988">988</a>
+<a class="btn ghost" href="tel:18006624357" aria-label="SAMHSA helpline 1-800-662-4357">Help line</a>
+<a class="btn ghost" href="#home" onclick="go('home');return false">Home</a>
+</nav>
+<script>
+const K='oneday-v1';
+const D=load();
+function load(){try{return Object.assign({start:null,name:'',people:[],log:[],morning:{},night:{},urges:[],why:''},JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){return{start:null,name:'',people:[],log:[],morning:{},night:{},urges:[],why:''}}}
+function save(){localStorage.setItem(K,JSON.stringify(D))}
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+function days(){if(!D.start)return null;const a=new Date(D.start+'T00:00:00'),b=new Date(today()+'T00:00:00');return Math.max(0,Math.round((b-a)/864e5))}
+function speak(t){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.rate=.9;speechSynthesis.speak(u)}catch(e){}}
+let timer=null;function stopTimer(){if(timer){clearInterval(timer);timer=null}try{speechSynthesis.cancel()}catch(e){}}
+function go(v,...a){stopTimer();location.hash=v;(V[v]||V.home)(...a);window.scrollTo(0,0)}
+function render(h){$('#app').innerHTML=h}
+const MILES=[[1,'24 hours'],[7,'One week'],[30,'30 days'],[60,'60 days'],[90,'90 days'],[180,'Six months'],[270,'Nine months'],[365,'One year'],[548,'18 months'],[730,'Two years'],[1095,'Three years'],[1825,'Five years'],[3650,'Ten years']];
+function nextMile(n){return MILES.find(m=>m[0]>n)}
+function dayWord(n){return n===1?'day':'days'}
+
+const V={
+home(){
+ if(!D.start)return V.setup();
+ const n=days(),m=nextMile(n),t=today(),mo=D.morning[t],ni=D.night[t];
+ render(`<h1>${D.name?esc(D.name)+', ':''}just for today.</h1>
+ <div class="card"><div class="muted">Clean and sober</div><div class="count">${n}</div><div style="font-size:30px">${dayWord(n)}</div>
+ ${m?`<p class="muted">${m[0]-n} ${dayWord(m[0]-n)} to ${m[1].toLowerCase()}. But today is the one that counts.</p>`:`<p class="muted">Every day still counts the same: one.</p>`}</div>
+ <button class="big" onclick="go('urge')">I want to use</button>
+ <button class="${mo?'ghost':''}" onclick="go('morning')">${mo?'✓ Morning done':'Start my day'}</button>
+ <button class="${ni?'ghost':'calm'}" onclick="go('night')">${ni?'✓ Night check done':'Close out my day'}</button>
+ <div class="row"><button class="ghost" onclick="go('halt')">HALT check</button><button class="ghost" onclick="go('people')">My people</button></div>
+ <div class="row"><button class="ghost" onclick="go('meetings')">Find a meeting</button><button class="ghost" onclick="go('journey')">My journey</button></div>
+ <div class="row"><button class="ghost" onclick="go('why')">My why</button><button class="ghost" onclick="go('settings')">Settings</button></div>`)},
+
+setup(){render(`<h1>One Day</h1><p>A quiet place for recovery, one day at a time. Everything stays on this phone.</p>
+ <label>What should I call you? (optional)<input id="nm" value="${esc(D.name)}" autocomplete="off"></label>
+ <label>My clean date<input id="sd" type="date" value="${D.start||today()}" max="${today()}"></label>
+ <button onclick="D.name=$('#nm').value.trim();D.start=$('#sd').value||today();save();go('home')">That's my day</button>
+ ${D.start?`<button class="ghost" onclick="go('home')">Back</button>`:''}`)},
+
+urge(step=0,ctx={}){
+ const steps=[
+ ()=>`<h1>I'm here. Let's ride it out.</h1><p>Wanting to use doesn't mean you have to. Cravings rise, peak, and fall, usually in 15 to 30 minutes. How strong is it right now?</p>
+   <div class="scale">${[...Array(11)].map((_,i)=>`<button onclick="V.urge(1,{before:${i}})">${i}</button>`).join('')}</div>
+   <p class="muted">0 is barely there. 10 is the strongest it gets.</p>`,
+ ()=>`<h1>Quick check: HALT</h1><p>Am I one of these right now? Tap any that fit.</p>
+   ${HALT.map((h,i)=>`<button class="ghost" id="h${i}" onclick="this.classList.toggle('ghost');this.classList.toggle('calm')">${h.n}</button>`).join('')}
+   <button onclick="V.urge(2,Object.assign(${esc(JSON.stringify(ctx))},{halt:HALT.filter((_,i)=>$('#h'+i).classList.contains('calm')).map(h=>h.n)}))">Next</button>`,
+ ()=>{const fix=(ctx.halt||[]).map(n=>HALT.find(h=>h.n===n)).map(h=>`<div class="card"><b>${h.n}:</b> ${h.do}</div>`).join('');
+   return `<h1>${fix?'Take care of that first':'Okay. Ride the wave.'}</h1>${fix}
+   <p>Next we'll breathe through ten minutes together. You don't have to fight it. Just watch it, like a wave you're surfing.</p>
+   <button class="calm" onclick="V.urge(3,${esc(JSON.stringify(ctx))})">Start ten minutes</button>
+   <button class="ghost" onclick="V.urge(4,${esc(JSON.stringify(ctx))})">Skip to playing it forward</button>`},
+ ()=>`<h1 id="wt">Ride the wave</h1><div class="wave" id="wv">〰️</div><p id="wp" style="font-size:30px">Breathe in slow… and out slower.</p>
+   <div class="bar"><i id="wb"></i></div><p class="muted" id="wl">10:00 left</p>
+   <button class="ghost" onclick="speakOn=!speakOn;this.textContent=speakOn?'Voice on':'Voice off'">Voice on</button>
+   <button onclick="V.urge(4,${esc(JSON.stringify(ctx))})">I'm ready to keep going</button>`,
+ ()=>`<h1>Play the tape forward</h1><p>Picture it all the way to the end, not just the first five minutes.</p>
+   <label>If I use, what happens tonight?<textarea id="t1"></textarea></label>
+   <label>What about tomorrow morning? Who finds out?<textarea id="t2"></textarea></label>
+   ${D.why?`<div class="card"><div class="muted">My why</div><p style="font-size:28px">${esc(D.why)}</p></div>`:''}
+   <button onclick="V.urge(5,Object.assign(${esc(JSON.stringify(ctx))},{tape:($('#t1').value+' / '+$('#t2').value).trim()}))">Next</button>`,
+ ()=>`<h1>Tell someone</h1><p>Saying it out loud takes most of its power away. You don't have to explain, just "I'm having a rough one."</p>
+   ${D.people.length?D.people.map(p=>`<a class="btn calm" href="tel:${esc(p.ph)}">Call ${esc(p.n)}</a>`).join(''):`<p class="muted">You haven't added your people yet.</p><button class="ghost" onclick="go('people')">Add my people</button>`}
+   <a class="btn ghost" href="tel:18006624357">SAMHSA help line, free, 24/7</a>
+   <button onclick="V.urge(6,${esc(JSON.stringify(ctx))})">Next</button>`,
+ ()=>`<h1>How strong is it now?</h1><p class="muted">You started at ${ctx.before}.</p>
+   <div class="scale">${[...Array(11)].map((_,i)=>`<button onclick="V.urgeDone(${esc(JSON.stringify(ctx))},${i})">${i}</button>`).join('')}</div>`
+ ];
+ render(steps[step]()+`<button class="ghost" onclick="go('home')">Back home</button>`);
+ if(step===3)wave();
+},
+urgeDone(ctx,after){ctx.after=after;ctx.at=new Date().toISOString();D.urges.push(ctx);save();
+ const drop=ctx.before-after;
+ render(`<h1>${drop>0?'It came down '+drop+'.':'You\'re still here.'}</h1>
+ <p>${drop>0?'That\'s the wave falling, and you rode it.':'It didn\'t drop yet, and that\'s okay. Run it again or call someone now.'} I wrote this one down so you can see later that you got through it.</p>
+ ${drop<=0?`<button class="big" onclick="go('urge')">Go again</button>`:''}
+ <button class="calm" onclick="go('home')">Back home</button>`);if(drop>0)speak('You rode it. That one counts.')},
+
+halt(){render(`<h1>HALT check</h1><p>Most cravings get louder when one of these is true. Which one is it?</p>
+ ${HALT.map(h=>`<div class="card"><h2>${h.n}</h2><p>${h.do}</p></div>`).join('')}<button class="ghost" onclick="go('home')">Back</button>`)},
+
+morning(){const t=today(),m=D.morning[t]||{};render(`<h1>Start my day</h1><p class="muted">Just for today. Not forever, just today.</p>
+ <label>Today I will stay clean by…<textarea id="m1">${esc(m.plan)}</textarea></label>
+ <label>One person I'll reach out to<input id="m2" value="${esc(m.who)}"></label>
+ <label>One thing I'll stay away from<input id="m3" value="${esc(m.avoid)}"></label>
+ <button onclick="D.morning['${t}']={plan:$('#m1').value,who:$('#m2').value,avoid:$('#m3').value};save();speak('Just for today. You\\'ve got this one.');go('home')">Save my day</button>
+ <button class="ghost" onclick="go('home')">Back</button>`)},
+
+night(){const t=today(),n=D.night[t]||{};render(`<h1>Close out my day</h1><p class="muted">Honest, not harsh. Nobody sees this but you.</p>
+ <p>Did I stay clean today?</p><div class="row"><button id="yy" class="${n.clean===false?'ghost':''}" onclick="nc=true;$('#yy').className='';$('#nn').className='ghost'">Yes</button><button id="nn" class="${n.clean===false?'':'ghost'}" onclick="nc=false;$('#nn').className='';$('#yy').className='ghost'">No</button></div>
+ <label>What went right today?<textarea id="n1">${esc(n.right)}</textarea></label>
+ <label>Was I resentful, scared, selfish, or dishonest anywhere?<textarea id="n2">${esc(n.wrong)}</textarea></label>
+ <label>Do I owe anyone an apology?<input id="n3" value="${esc(n.owe)}"></label>
+ <label>Three things I'm grateful for<input id="g1" value="${esc((n.grat||[])[0])}"><input id="g2" value="${esc((n.grat||[])[1])}"><input id="g3" value="${esc((n.grat||[])[2])}"></label>
+ <button class="calm" onclick="V.nightSave('${t}')">Close the day</button><button class="ghost" onclick="go('home')">Back</button>`);
+ window.nc=n.clean!==false},
+nightSave(t){D.night[t]={clean:nc,right:$('#n1').value,wrong:$('#n2').value,owe:$('#n3').value,grat:[$('#g1').value,$('#g2').value,$('#g3').value]};save();
+ if(!nc){render(`<h1>Thank you for being honest.</h1><p>A slip doesn't erase what you've learned or the days you put together. Tomorrow can be day one, and day one is a brave day.</p>
+ <p>Tell one person tonight or tomorrow morning. You don't have to carry it alone.</p>
+ <button onclick="D.start=today();save();go('home')">Start my count again from today</button>
+ <button class="ghost" onclick="go('home')">Not now</button>`);return}
+ speak('We had a good day.');render(`<h1>We had a good day.</h1><p>${days()+1} ${dayWord(days()+1)} by tomorrow morning. Rest. You earned it.</p><button class="calm" onclick="go('home')">Goodnight</button>`)},
+
+people(){render(`<h1>My people</h1><p class="muted">Sponsor, friends, family, anyone who picks up.</p>
+ ${D.people.map((p,i)=>`<div class="card"><h2>${esc(p.n)}</h2><div class="row"><a class="btn calm" href="tel:${esc(p.ph)}">Call</a><a class="btn ghost" href="sms:${esc(p.ph)}">Text</a><button class="ghost" onclick="if(confirm('Remove ${esc(p.n).replace(/'/g,'')}?')){D.people.splice(${i},1);save();go('people')}">Remove</button></div></div>`).join('')}
+ <div class="card"><h2>Add someone</h2><label>Name<input id="pn"></label><label>Phone<input id="pp" type="tel"></label>
+ <button onclick="const n=$('#pn').value.trim(),p=$('#pp').value.trim();if(n&&p){D.people.push({n,ph:p});save();go('people')}">Add</button></div>
+ <button class="ghost" onclick="go('home')">Back</button>`)},
+
+meetings(){render(`<h1>Find a meeting</h1><p>These open the groups' own meeting finders, in person and online.</p>
+ <a class="btn" href="https://www.aa.org/find-aa" target="_blank" rel="noopener">AA meetings</a>
+ <a class="btn" href="https://www.na.org/meetingsearch/" target="_blank" rel="noopener">NA meetings</a>
+ <a class="btn calm" href="https://meetings.smartrecovery.org/meetings/" target="_blank" rel="noopener">SMART Recovery</a>
+ <a class="btn ghost" href="https://findtreatment.gov/" target="_blank" rel="noopener">Find treatment (FindTreatment.gov)</a>
+ <a class="btn ghost" href="tel:18006624357">SAMHSA help line: 1-800-662-4357</a>
+ <button class="ghost" onclick="go('home')">Back</button>`)},
+
+journey(){const n=days(),u=D.urges.slice().reverse(),nights=Object.keys(D.night).sort().reverse();
+ render(`<h1>My journey</h1><div class="card"><div class="count">${n}</div>${dayWord(n)} since ${new Date(D.start+'T00:00:00').toLocaleDateString(undefined,{month:'long',day:'numeric',year:'numeric'})}</div>
+ <div class="card"><h2>Milestones</h2>${MILES.map(m=>`<div class="mile ${n>=m[0]?'done':''}"><span>${n>=m[0]?'★ ':''}${m[1]}</span><span>${n>=m[0]?'made it':(m[0]-n)+' to go'}</span></div>`).join('')}</div>
+ <div class="card"><h2>Cravings I rode out: ${u.length}</h2>${u.slice(0,15).map(x=>`<p>${new Date(x.at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}: ${x.before} down to ${x.after}${(x.halt||[]).map(h=>`<span class="tag">${esc(h)}</span>`).join('')}</p>`).join('')||'<p class="muted">None yet.</p>'}</div>
+ <div class="card"><h2>Gratitude</h2>${nights.slice(0,10).map(d=>(D.night[d].grat||[]).filter(Boolean).map(g=>`<span class="tag">${esc(g)}</span>`).join('')).join('')||'<p class="muted">Close out a day to start this list.</p>'}</div>
+ <button class="ghost" onclick="go('home')">Back</button>`)},
+
+why(){render(`<h1>My why</h1><p>Who or what am I staying clean for? This shows up when a craving hits.</p>
+ <textarea id="wy" style="min-height:180px">${esc(D.why)}</textarea>
+ <button onclick="D.why=$('#wy').value.trim();save();go('home')">Save</button><button class="ghost" onclick="go('home')">Back</button>`)},
+
+settings(){render(`<h1>Settings</h1>
+ <button class="ghost" onclick="go('setup')">Change my name or clean date</button>
+ <button class="ghost" onclick="V.backup()">Save a copy</button>
+ <label class="btn ghost" style="display:block;border-radius:22px;padding:22px;margin:12px 0;font:800 28px system-ui;text-align:center;cursor:pointer">Bring back a copy<input type="file" accept=".json,application/json" class="hidden" onchange="V.restore(this.files[0])"></label>
+ <p class="muted">Nothing leaves this phone. No account, no tracking. If you clear the browser, your entries go too, so save a copy now and then.</p>
+ <button class="ghost" onclick="go('home')">Back</button>`)},
+backup(){const b=new Blob([JSON.stringify(D,null,1)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='one-day-'+today()+'.json';document.body.appendChild(a);a.click();a.remove()},
+restore(f){if(!f)return;f.text().then(t=>{try{const o=JSON.parse(t);if(!('start' in o))throw 0;Object.keys(D).forEach(k=>delete D[k]);Object.assign(D,o);save();alert('Brought back.');go('home')}catch(e){alert("That file didn't look like a One Day copy.")}})}
+};
+
+const HALT=[
+ {n:'Hungry',do:'Eat something real, even small. Protein if you can. Low blood sugar can feel a lot like a craving.'},
+ {n:'Angry',do:'Move your body for five minutes, then write it down or say it to someone. Anger passes faster out loud.'},
+ {n:'Lonely',do:'Call or text one of your people, or get to a meeting. Isolation is where it grows.'},
+ {n:'Tired',do:'Rest if you can, even 20 minutes lying down. Everything is louder when you\'re worn out.'}];
+
+let speakOn=true;
+const WAVE=['Breathe in slow… and out slower.','Notice where you feel it in your body.','It\'s just a feeling. It can\'t make you do anything.','Feel it rise. You don\'t have to fight it.','Waves peak, then they fall. This one will too.','Unclench your jaw. Drop your shoulders.','You\'ve gotten through every craving you\'ve ever had.','Keep breathing. In through the nose, out through the mouth.','It\'s starting to ease. Stay with it.','Almost there. You\'re riding it.'];
+function wave(){const total=600;let left=total,i=0;const step=()=>{const p=WAVE[i%WAVE.length];$('#wp').textContent=p;if(speakOn)speak(p);i++};step();
+ timer=setInterval(()=>{left--;if(!$('#wb')){stopTimer();return}$('#wb').style.width=((total-left)/total*100)+'%';$('#wl').textContent=Math.floor(left/60)+':'+String(left%60).padStart(2,'0')+' left';$('#wv').textContent=['〰️','🌊','〰️','🌊'][Math.floor(left/4)%4];
+ if(left%60===0&&left>0)step();if(left<=0){stopTimer();$('#wt').textContent='You rode it.';$('#wp').textContent='Ten minutes. The wave crested and you\'re still here.';if(speakOn)speak('Ten minutes. You rode it.')}},1000)}
+
+go((location.hash.slice(1) in V&&!['urgeDone','nightSave','backup','restore'].includes(location.hash.slice(1)))?location.hash.slice(1):'home');
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script></body></html>
